@@ -1,27 +1,48 @@
 "use client";
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { usePalsphereProgram } from "../utils/anchorProvider";
-import BN from "bn.js"; // <- Needed for Anchor v0.26+
+import BN from "bn.js";
 import { PublicKey, SystemProgram } from "@solana/web3.js";
 
+interface InitialValues {
+  statement?: string;
+  verificationUrl?: string;
+  confidence?: number;
+  stake?: number;
+  deadline?: string;
+}
 interface Props {
   open: boolean;
   onClose: () => void;
   onCreated?: () => void;
+  initialValues?: InitialValues;
 }
 
-export default function CreatePalModal({ open, onClose, onCreated }: Props) {
+export default function CreatePalModal({ open, onClose, onCreated, initialValues }: Props) {
   const { program, wallet } = usePalsphereProgram();
-  const [statement, setStatement] = useState("");
-  const [verificationUrl, setVerificationUrl] = useState("");
-  const [confidence, setConfidence] = useState(80);
-  const [stake, setStake] = useState(0.01); // in SOL
-  const [deadline, setDeadline] = useState("");
+
+  // --- Form state
+  const [statement, setStatement] = useState(initialValues?.statement || "");
+  const [verificationUrl, setVerificationUrl] = useState(initialValues?.verificationUrl || "");
+  const [confidence, setConfidence] = useState(initialValues?.confidence ?? 80);
+  const [stake, setStake] = useState(initialValues?.stake ?? 0.01); // in SOL
+  const [deadline, setDeadline] = useState(initialValues?.deadline || "");
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
 
-  // Basic validation
+  // Debug: Log values on render
+  useEffect(() => {
+    if (open) {
+      setStatement(initialValues?.statement || "");
+      setVerificationUrl(initialValues?.verificationUrl || "");
+      setConfidence(initialValues?.confidence ?? 80);
+      setStake(initialValues?.stake ?? 0.01);
+      setDeadline(initialValues?.deadline || "");
+    }
+    // eslint-disable-next-line
+  }, [open, initialValues]);
+
+  // Validation
   const isValid =
     statement.length > 10 &&
     verificationUrl.startsWith("http") &&
@@ -30,40 +51,53 @@ export default function CreatePalModal({ open, onClose, onCreated }: Props) {
     confidence >= 0 &&
     confidence <= 100;
 
+  // --- DEBUG LOGS ---
+  useEffect(() => {
+    // Log the actual current state whenever it changes
+    if (open) {
+      console.log("Modal open: debug form state", {
+        statement, verificationUrl, confidence, stake, deadline
+      });
+      console.log("isValid?", isValid);
+      console.log("program:", program);
+      console.log("wallet:", wallet);
+    }
+  }, [open, statement, verificationUrl, confidence, stake, deadline, program, wallet, isValid]);
+
+  // -- Submit
   async function handleSubmit(e: any) {
     e.preventDefault();
+    console.log("SUBMIT fired", { program, wallet });
+
     setError("");
     if (!program || !wallet) {
       setError("Wallet not connected");
+      console.log("NO PROGRAM/WALLET", { program, wallet });
       return;
     }
     setCreating(true);
-
     try {
-      // Parse deadline to unix timestamp
       const unixDeadline =
         deadline && !isNaN(new Date(deadline).getTime())
           ? Math.floor(new Date(deadline).getTime() / 1000)
           : Math.floor(Date.now() / 1000) + 60 * 60 * 24;
 
-      // Generate a new keypair for the Pal account
       const { web3 } = await import("@project-serum/anchor");
       const kp = web3.Keypair.generate();
-
-      // PDA for palVault
       const palVaultSeeds = [Buffer.from("pal_vault"), kp.publicKey.toBuffer()];
       const [palVaultPDA] = await web3.PublicKey.findProgramAddress(
         palVaultSeeds,
         program.programId
       );
 
-      // Debug logging
-      console.log("Wallet pubkey:", wallet.publicKey?.toBase58());
-      console.log("PalAccount pubkey:", kp.publicKey.toBase58());
-      console.log("palVaultPDA:", palVaultPDA.toBase58());
-      console.log("About to send tx...");
+      // Log everything before send
+      console.log("About to call createPal with:", {
+        statement, verificationUrl, confidence, unixDeadline, stake,
+        palVaultPDA: palVaultPDA.toBase58(),
+        kp: kp.publicKey.toBase58(),
+        creator: wallet.publicKey?.toBase58?.(),
+      });
 
-      // Call Anchor method (using BN for numbers)
       const tx = await program.methods
         .createPal(
           statement,
@@ -77,7 +111,7 @@ export default function CreatePalModal({ open, onClose, onCreated }: Props) {
           palAccount: kp.publicKey,
           creator: wallet.publicKey,
           palVault: palVaultPDA,
-          oracle: wallet.publicKey, // Use a real oracle in production!
+          oracle: wallet.publicKey,
           systemProgram: SystemProgram.programId,
         })
         .signers([kp])
@@ -85,7 +119,6 @@ export default function CreatePalModal({ open, onClose, onCreated }: Props) {
 
       console.log("Tx sent! Signature:", tx);
 
-      // Reset form only if success
       setStatement("");
       setVerificationUrl("");
       setConfidence(80);
