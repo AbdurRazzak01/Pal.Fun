@@ -37,33 +37,24 @@ export default function Feed({
   onJoinPal,
   onResolvePal,
 }: FeedProps) {
-  // Only show the first pal, if any:
-  const pal = pals?.[0];
+  // Show up to the first 3 pals, if any:
+  const topPals = pals?.slice(0, 3) || [];
 
   return (
     <div className="w-full flex flex-col gap-10 px-4 md:px-40">
       {/* Header */}
-      <div className="flex justify-between items-center mb-3">
-     
-      
-      </div>
+      <div className="flex justify-between items-center mb-3"></div>
 
-      {loading && (
-        <div className="text-center py-16 text-fuchsia-700 text-lg font-semibold animate-pulse">
-          Loading pals from blockchain...
-        </div>
-      )}
-
-      {!loading && (!pal || Object.keys(pal).length === 0) && (
+      {!loading && (!topPals.length) && (
         <div className="text-gray-400 text-center font-semibold py-16 text-xl">
           No pals found yet.<br />Start the fun—create one!
         </div>
       )}
 
       <div className="flex flex-col gap-10">
-        {pal && (
+        {topPals.map((pal, idx) => (
           <motion.div
-            key={safeText(pal.publicKey)}
+            key={safeText(pal.publicKey) + idx}
             initial={{ opacity: 0, y: 36 }}
             animate={{
               opacity: 1,
@@ -179,7 +170,7 @@ export default function Feed({
               </div>
             </div>
           </motion.div>
-        )}
+        ))}
       </div>
     </div>
   );

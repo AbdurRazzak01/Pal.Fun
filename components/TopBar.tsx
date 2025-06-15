@@ -33,7 +33,7 @@ export default function TopBar() {
           />
         </div>
         <span className="font-extrabold text-2xl sm:text-3xl bg-gradient-to-tr from-fuchsia-600 via-blue-500 to-amber-400 text-transparent bg-clip-text drop-shadow">
-          Palsphere
+          Pal.Fun
         </span>
       </div>
       {/* Actions */}

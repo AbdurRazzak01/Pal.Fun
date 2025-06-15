@@ -13,6 +13,7 @@ import { usePals } from "../utils/usePals";
 import { AnimatePresence, motion } from "framer-motion";
 import { Sparkles } from "lucide-react";
 import CenteredModal from "@/components/CenteredModal";
+import AnimatedDonutWithDots from "@/components/AnimatedDonutWithDots";
 
 // SSR safe wallet button for fallback in mobile menu
 const WalletMultiButton = dynamic(
@@ -31,6 +32,17 @@ const DUMMY_PALS = [
     confidence_score: 93,
     deadline: Math.floor(Date.now() / 1000) + 60000,
     verification_url: "https://www.csail.mit.edu/admissions",
+    participants: [],
+  },
+  {
+    publicKey: "EXAMPL1234568",
+    creator: "Fakeman22222222",
+    status: "Active",
+    statement: "Stanford will remove the GRE for PhD admissions in 2027.",
+    stake_amount: 8000000,
+    confidence_score: 85,
+    deadline: Math.floor(Date.now() / 1000) + (10 * 24 * 60 * 60),
+    verification_url: "https://cs.stanford.edu/admissions",
     participants: [],
   },
 ];
@@ -78,37 +90,54 @@ export default function Home() {
 
       {/* Story Bar, colored and lively */}
       <StoryBar pals={allPals} />
+      <div className="relative flex flex-col items-center justify-center">
+  {/* Animated Donut Background */}
+
+  {/* Main content, e.g. Feed header/button */}
+  <div className="z-10">...</div>
+</div>
 
       {/* Main Layout Grid */}
-      <div className="flex w-full max-w-12xl mx-auto px-1 lg:px-3 gap-6 min-h-[70vh] pt-4 pb-20">
+      <div className="flex w-full max-w-10xl mx-auto px-1 lg:px-3 gap-6 min-h-[70vh] pt-4 pb-20">
       {/* Feed */}
         <main className="flex-1 max-w-2xl lg:max-w-4xl mx-auto z-10">
         {/* Empty state art */}
           {!loading && !pals?.length && (
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0, transition: { delay: 0.15 } }}
-              className="flex flex-col items-center mt-14 mb-10"
-            >
-              <Sparkles className="w-14 h-14 text-fuchsia-500 animate-bounce mb-4 drop-shadow-xl" />
-              <div className="text-3xl font-extrabold text-center text-fuchsia-800 dark:text-yellow-100 mb-2 tracking-tight drop-shadow-lg">
-                Welcome to <span className="text-yellow-400">Palsphere!</span>
-              </div>
-              <div className="text-lg text-gray-700 dark:text-fuchsia-100 mb-4 text-center max-w-sm">
-                Make a <span className="font-semibold text-fuchsia-500">Pal</span>—bet, challenge, or prediction, all on chain, all social, all fun.
-              </div>
-              <motion.button
-                whileTap={{ scale: 0.96 }}
-                whileHover={{ scale: 1.07, boxShadow: "0 4px 28px #f472b6" }}
-                className="bg-gradient-to-r from-fuchsia-500 via-orange-400 to-yellow-300 text-white px-8 py-4 font-extrabold text-lg rounded-xl shadow-2xl shadow-pink-200/30 transition-all hover:brightness-110 active:brightness-90 mb-6 animate-pulse"
-                onClick={() => setModalOpen(true)}
-              >
-                + Create Your First Pal
-              </motion.button>
-              <div className="text-xs text-gray-400 mt-2">
-                <span className="animate-pulse">Or see some live examples below!</span>
-              </div>
-            </motion.div>
+
+<motion.div
+initial={{ opacity: 0, y: 12 }}
+animate={{ opacity: 1, y: 0, transition: { delay: 0.15 } }}
+className="flex flex-col items-center mt-14 mb-10"
+>
+{/* Donut + Sparkle stack */}
+<div className="relative flex items-center justify-center mb-4" style={{ width: 80, height: 80 }}>
+  {/* Animated Donut (background) */}
+  <AnimatedDonutWithDots className="absolute inset-0 w-[90px] h-[100px] -z-10" />
+  {/* Sparkles (foreground) */}
+</div>
+
+<div className="text-3xl font-extrabold text-center text-fuchsia-800 dark:text-yellow-100 mb-2 tracking-tight drop-shadow-lg">
+  Welcome to <span className="text-yellow-400">Pal.Fun!</span>
+</div>
+<div className="text-lg text-gray-700 dark:text-fuchsia-100 mb-4 text-center max-w-sm">
+  Make a <span className="font-semibold text-fuchsia-500">Pal</span>—bet, challenge, or prediction, all on Chain, all Social, all Fun.
+</div>
+<motion.button
+  whileTap={{ scale: 0.96 }}
+  whileHover={{ scale: 1.07, boxShadow: "0 4px 28px #f472b6" }}
+  className="bg-gradient-to-r from-fuchsia-500 via-orange-400 to-yellow-300 text-white px-8 py-4 font-extrabold text-lg rounded-xl shadow-2xl shadow-pink-200/30 transition-all hover:brightness-110 active:brightness-90 mb-6 animate-pulse"
+  onClick={() => setModalOpen(true)}
+>
+  + Create Your First Bet
+</motion.button>
+<div className="text-xs text-gray-400 mt-2">
+  <span className="animate-pulse">Or see some live examples below!</span>
+</div>
+</motion.div>
+
+
+
+         
           )}
           <Feed
             pals={allPals}
@@ -134,7 +163,7 @@ export default function Home() {
       <BottomNav onCreatePal={() => setModalOpen(true)} />
 
       <AnimatePresence>
-        {modalOpen && (
+      {modalOpen && (
           <motion.div
             key="create-pal-modal"
             initial={{ opacity: 0 }}
@@ -142,13 +171,13 @@ export default function Home() {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md"
           >
-            <CenteredModal>
-              <CreatePalModal
-                open={modalOpen}
-                onClose={() => setModalOpen(false)}
-                onCreated={() => window.location.reload()}
-              />
-            </CenteredModal>
+           <CenteredModal>
+  <CreatePalModal
+    open={modalOpen}
+    onClose={() => setModalOpen(false)}
+    onCreated={() => window.location.reload()}
+  />
+</CenteredModal>
           </motion.div>
         )}
         {joinModalOpen && (

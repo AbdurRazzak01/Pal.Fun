@@ -1,6 +1,9 @@
 "use client";
+
 import { useState } from "react";
 import { usePalsphereProgram } from "../utils/anchorProvider";
+import BN from "bn.js";
+import { PublicKey, SystemProgram } from "@solana/web3.js";
 
 interface Props {
   open: boolean;
@@ -21,36 +24,52 @@ export default function JoinPalModal({ open, onClose, pal, onJoined }: Props) {
 
   async function handleJoin(e: any) {
     e.preventDefault();
-    if (!program || !wallet) return setError("Wallet not connected");
-    setJoining(true);
     setError("");
+    if (!program || !wallet) {
+      setError("Wallet not connected");
+      return;
+    }
+    setJoining(true);
+
     try {
-      const { web3 } = await import("@project-serum/anchor");
-      // Pal vault PDA must match the one in your contract!
-      const palVaultSeeds = [Buffer.from("pal_vault"), new web3.PublicKey(pal.publicKey).toBuffer()];
-      const [palVaultPDA] = await web3.PublicKey.findProgramAddress(
+      // Always use PublicKey object for all pubkey params!
+      const palPubkey = new PublicKey(
+        typeof pal.publicKey === "string"
+          ? pal.publicKey
+          : pal.publicKey?.toString?.() ?? pal.publicKey
+      );
+
+      // Derive palVault PDA correctly
+      const palVaultSeeds = [Buffer.from("pal_vault"), palPubkey.toBuffer()];
+      const [palVaultPDA] = await PublicKey.findProgramAddress(
         palVaultSeeds,
         program.programId
       );
+
+      // Always use BN for numbers sent to Anchor!
+      const lamports = new BN(Math.floor(amount * 1_000_000_000)); // 1 SOL = 1_000_000_000 lamports
+
       await program.methods
         .joinPal(
           side,
-          Math.floor(amount * web3.LAMPORTS_PER_SOL),
+          lamports,
           message
         )
         .accounts({
-          palAccount: new web3.PublicKey(pal.publicKey),
+          palAccount: palPubkey,
           joiner: wallet.publicKey,
           palVault: palVaultPDA,
-          systemProgram: web3.SystemProgram.programId,
+          systemProgram: SystemProgram.programId,
         })
         .rpc();
+
       setJoining(false);
-      onClose();
       if (onJoined) onJoined();
+      onClose();
     } catch (e: any) {
       setError(e.message || "Failed to join pal.");
       setJoining(false);
+      console.error(e);
     }
   }
 
